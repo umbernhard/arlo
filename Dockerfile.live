@@ -1,4 +1,5 @@
 # This is a persistent dev-environment container
+<<<<<<< HEAD
 #FROM ubuntu:focal 
 FROM python:3.8 
 
@@ -27,6 +28,12 @@ ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
 
 RUN apt update && apt install -y build-essential curl neovim sudo git python3-distutils
+=======
+FROM ubuntu:focal 
+
+
+RUN apt update && apt install -y build-essential curl neovim sudo git
+>>>>>>> 2a932b7a (Adding dev-env container. It's a WIP)
 
 RUN apt-get install -y locales && \
     sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
@@ -39,6 +46,7 @@ RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
 
 RUN useradd -m -G sudo -s /bin/bash arlo
 RUN echo "arlo:arlo" | chpasswd
+<<<<<<< HEAD
 
 #RUN apt install -y python3.8 python3.8-venv libpython3.8-dev libpq-dev graphicsmagick
 RUN # Install node: https://github.com/nodesource/distributions/blob/master/README.md#deb		
@@ -62,5 +70,19 @@ ENV PATH /home/arlo/.local/bin:$PATH
 #RUN poetry install
 #RUN yarn install
 #RUN yarn --cwd client install
+=======
+USER arlo
+RUN mkdir /home/arlo/arlo
+VOLUME ["/home/arlo/arlo"]
+
+ENV PATH /app/node_modules/.bin:$PATH
+# prepend poetry and venv to path
+ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+
+WORKDIR /home/arlo/arlo
+
+#RUN cd /home/arlo/arlo
+#RUN make dev-environment
+>>>>>>> 2a932b7a (Adding dev-env container. It's a WIP)
 
 EXPOSE 3000

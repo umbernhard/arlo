@@ -138,14 +138,14 @@ python-versions = ">=3.8"
 
 [[package]]
 name = "boto3"
-version = "1.35.31"
+version = "1.35.34"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 
 [package.dependencies]
-botocore = ">=1.35.31,<1.36.0"
+botocore = ">=1.35.34,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -154,7 +154,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.31"
+version = "1.35.34"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -169,7 +169,7 @@ urllib3 = [
 ]
 
 [package.extras]
-crt = ["awscrt (==0.21.5)"]
+crt = ["awscrt (==0.22.0)"]
 
 [[package]]
 name = "certifi"
@@ -1315,12 +1315,12 @@ blinker = [
     {file = "blinker-1.8.2.tar.gz", hash = "sha256:8f77b09d3bf7c795e969e9486f39c2c5e9c39d4ee07424be2bc594ece9642d83"},
 ]
 boto3 = [
-    {file = "boto3-1.35.31-py3-none-any.whl", hash = "sha256:2e9af74d10d8af7610a8d8468d2914961f116912a024fce17351825260385a52"},
-    {file = "boto3-1.35.31.tar.gz", hash = "sha256:8c593af260c4ea3eb6f079c09908f94494ca2222aa4e40a7ff490fab1cee8b39"},
+    {file = "boto3-1.35.34-py3-none-any.whl", hash = "sha256:291e7b97a34967ed93297e6171f1bebb8529e64633dd48426760e3fdef1cdea8"},
+    {file = "boto3-1.35.34.tar.gz", hash = "sha256:57e6ee8504e7929bc094bb2afc879943906064179a1e88c23b4812e2c6f61532"},
 ]
 botocore = [
-    {file = "botocore-1.35.31-py3-none-any.whl", hash = "sha256:4cee814875bc78656aef4011d3d6b2231e96f53ea3661ee428201afb579d5c31"},
-    {file = "botocore-1.35.31.tar.gz", hash = "sha256:f7bfa910cf2cbcc8c2307c1cf7b93495d614c2d699883417893e0a337fe4eb63"},
+    {file = "botocore-1.35.34-py3-none-any.whl", hash = "sha256:ccb0fe397b11b81c9abc0c87029d17298e17bf658d8db5c0c5a551a12a207e7a"},
+    {file = "botocore-1.35.34.tar.gz", hash = "sha256:789b6501a3bb4a9591c1fe10da200cc315c1fa5df5ada19c720d8ef06439b3e3"},
 ]
 certifi = [
     {file = "certifi-2024.8.30-py3-none-any.whl", hash = "sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8"},

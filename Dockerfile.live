@@ -63,7 +63,7 @@ RUN echo "arlo:arlo" | chpasswd
 
 #RUN apt install -y python3.8 python3.8-venv libpython3.8-dev libpq-dev graphicsmagick
 RUN # Install node: https://github.com/nodesource/distributions/blob/master/README.md#deb		
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash 
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | grep -v 'sleep' | bash 
 RUN apt-get install -y nodejs
 RUN # Install poetry: https://python-poetry.org/docs/master/#osx--linux--bashonwindows-install-instructions
 RUN # Keep the local dev POETRY_VERSION in sync with the Heroku config var
@@ -73,13 +73,13 @@ USER arlo
 RUN curl -sSL https://install.python-poetry.org | python3.8 -
 
 RUN mkdir /home/arlo/arlo
-VOLUME ["/home/arlo/arlo"]
 WORKDIR /home/arlo/arlo
 
 ENV PATH /app/node_modules/.bin:$PATH
 # prepend poetry and venv to path
 ENV PATH /home/arlo/.local/bin:$PATH
 
+<<<<<<< HEAD
 #COPY . .
 #RUN poetry install
 #RUN yarn install
@@ -110,5 +110,17 @@ WORKDIR /home/arlo/arlo
 #RUN yarn install
 #RUN yarn --cwd client install
 >>>>>>> eb01081e (Finally have a live dev-env container in a place that I'm happy with)
+=======
+# Copy/install python dev dependencies
+COPY poetry.lock .
+COPY pyproject.toml .
+RUN poetry install
+
+# Copy/install client dependencies
+COPY yarn.lock .
+COPY client .
+RUN yarn install
+RUN yarn --cwd client install
+>>>>>>> b4575e51 (Working on making this a two-command operation)
 
 EXPOSE 3000

@@ -39,8 +39,6 @@ services:
     build:
       dockerfile: Dockerfile.dev
     tty: true
-    command:
-      bash -c "./run-dev.sh"
     ports:
       - 3000:3000
       - 3001:3001

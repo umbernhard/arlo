@@ -57,15 +57,4 @@ ENV PATH /app/node_modules/.bin:$PATH
 # prepend poetry and venv to path
 ENV PATH /home/arlo/.local/bin:$PATH
 
-# Copy/install python dev dependencies
-COPY poetry.lock .
-COPY pyproject.toml .
-RUN poetry install
-
-# Copy/install client dependencies
-COPY yarn.lock .
-COPY client .
-RUN yarn install
-RUN yarn --cwd client install
-
 EXPOSE 3000

@@ -59,10 +59,10 @@ def pretty_pvalue(value: float) -> str:
         return ""
     elif value == 0:
         return "0"
-    elif value < 10 ** -10:
+    elif value < 10**-10:
         return "<0.0000000001"
     else:
-        ret = "{:1.10f}".format(round(value, 10)).rstrip("0")
+        ret = f"{round(value, 10):1.10f}".rstrip("0")
         # If we've stripped off the zero right after the decimal, put it back
         if ret[-1] == ".":
             ret += "0"
@@ -74,7 +74,8 @@ TicketNumberTuple = Tuple[str, str, str]
 
 
 def pretty_ballot_ticket_numbers(
-    ticket_number_tuples: List[TicketNumberTuple], targeted_contests: List[Contest],
+    ticket_number_tuples: List[TicketNumberTuple],
+    targeted_contests: List[Contest],
 ) -> List[str]:
     columns = []
     for contest in targeted_contests:
@@ -125,7 +126,8 @@ InterpretationTuple = Tuple[str, str, List[str], str, bool, bool]
 
 
 def pretty_ballot_interpretation(
-    interpretations: List[InterpretationTuple], contest: Contest,
+    interpretations: List[InterpretationTuple],
+    contest: Contest,
 ) -> str:
     interpretation = next((i for i in interpretations if i[0] == contest.id), None)
     # Legacy case: we used to not require an interpretation for every contest
@@ -186,7 +188,8 @@ def add_sign(value: int) -> str:
 
 
 def pretty_vote_deltas(
-    contest: Contest, vote_deltas: Optional[Union[str, ContestVoteDeltas]],
+    contest: Contest,
+    vote_deltas: Optional[Union[str, ContestVoteDeltas]],
 ) -> str:
     if vote_deltas is None:
         return ""
@@ -203,7 +206,8 @@ def pretty_vote_deltas(
 
 
 def pretty_discrepancy(
-    ballot: SampledBallot, contest_discrepancies: Dict[str, supersimple.Discrepancy],
+    ballot: SampledBallot,
+    contest_discrepancies: Dict[str, supersimple.Discrepancy],
 ) -> str:
     if ballot.id in contest_discrepancies:
         return str(contest_discrepancies[ballot.id]["counted_as"])
@@ -387,6 +391,11 @@ def round_rows(election: Election):
             ["Audited Votes: CVR", "Audited Votes: Non CVR"]
             if election.audit_type == AuditType.HYBRID
             else []
+        )
+        + (
+            ["Batches Sampled", "Ballots Sampled", "Reported Votes"]
+            if election.audit_type == AuditType.BATCH_COMPARISON
+            else []
         ),
     ]
 
@@ -437,6 +446,35 @@ def round_rows(election: Election):
             total_choice_votes.update(non_cvr_choice_vote)
             total_choice_votes.update(cvr_choice_votes)
 
+        if election.audit_type == AuditType.BATCH_COMPARISON:
+            distinct_batches = (
+                Batch.query.join(SampledBatchDraw)
+                .join(Round)
+                .join(Jurisdiction)
+                .filter_by(election_id=election.id)
+                .filter(SampledBatchDraw.round_id == round.id)
+                .filter(SampledBatchDraw.ticket_number != EXTRA_TICKET_NUMBER)
+                .all()
+            )
+            num_distinct_batches = len(distinct_batches)
+            num_distinct_ballots = sum(batch.num_ballots for batch in distinct_batches)
+
+            # get the reported votes aggregated across batches
+            reported_results: dict = {choice.id: 0 for choice in contest.choices}
+            for batch in distinct_batches:
+                reported_results_for_batch = batch.jurisdiction.batch_tallies[
+                    batch.name
+                ].get(contest.id)
+                if reported_results_for_batch is not None:
+                    for choice in contest.choices:
+                        reported_results[choice.id] += reported_results_for_batch[
+                            choice.id
+                        ]
+
+            reported_results_by_name = {
+                choice.name: reported_results[choice.id] for choice in contest.choices
+            }
+
         rows.append(
             [
                 round.round_num,
@@ -455,6 +493,15 @@ def round_rows(election: Election):
                     pretty_choice_votes(non_cvr_choice_vote),
                 ]
                 if election.audit_type == AuditType.HYBRID
+                else []
+            )
+            + (
+                [
+                    num_distinct_batches,
+                    num_distinct_ballots,
+                    pretty_choice_votes(reported_results_by_name),
+                ]
+                if election.audit_type == AuditType.BATCH_COMPARISON
                 else []
             )
         )
@@ -540,7 +587,9 @@ def sampled_ballot_rows(election: Election, jurisdiction: Jurisdiction = None):
                 == ballot_interpretation_selected_choices.c.contest_id,
             ),
         )
-        .group_by(BallotInterpretation.ballot_id,)
+        .group_by(
+            BallotInterpretation.ballot_id,
+        )
         .with_entities(
             BallotInterpretation.ballot_id,
             func.array_agg(
@@ -731,7 +780,10 @@ def sampled_ballot_rows(election: Election, jurisdiction: Jurisdiction = None):
             [jurisdiction_name]
             + ([batch.container] if show_container else [])
             + ([batch.tabulator] if show_tabulator else [])
-            + [batch.name, ballot.ballot_position,]
+            + [
+                batch.name,
+                ballot.ballot_position,
+            ]
             + ([imprinted_id] if show_cvrs else [])
             + pretty_ballot_ticket_numbers(ticket_numbers, targeted_contests)
             + result_values
@@ -750,6 +802,7 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
     )
     if jurisdiction:
         batches_query = batches_query.filter(Jurisdiction.id == jurisdiction.id)
+
     batches = batches_query.order_by(
         Round.round_num,
         Jurisdiction.name,
@@ -803,6 +856,7 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
     column_headers = [
         "Jurisdiction Name",
         "Batch Name",
+        "Ballots in Batch",
         *ticket_number_columns,
         "Audited?",
         *result_columns,
@@ -810,10 +864,18 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
     ]
     rows.append(column_headers)
 
+    total_reported_results: dict = {
+        contest.id: {choice.id: 0 for choice in contest.choices} for contest in contests
+    }
+    total_audit_results: dict = {
+        contest.id: {choice.id: 0 for choice in contest.choices} for contest in contests
+    }
+
     for batch in batches:
         row = [
             batch.jurisdiction.name,
             batch.name,
+            batch.num_ballots,
             *pretty_batch_ticket_numbers(batch, round_id_to_num, contests),
         ]
 
@@ -835,6 +897,12 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
                 if contest.id in batch.jurisdiction.batch_tallies[batch.name]
                 else None
             )
+            if reported_results is not None:
+                for choice in contest.choices:
+                    total_reported_results[contest.id][choice.id] += reported_results[
+                        choice.id
+                    ]
+
             reported_results_by_name = reported_results and {
                 choice.name: reported_results[choice.id] for choice in contest.choices
             }
@@ -847,6 +915,11 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
                 if is_audited and reported_results
                 else None
             )
+            if audit_results is not None:
+                for choice in contest.choices:
+                    total_audit_results[contest.id][choice.id] += audit_results[
+                        choice.id
+                    ]
             audit_results_by_name = audit_results and {
                 choice.name: audit_results[choice.id] for choice in contest.choices
             }
@@ -892,6 +965,26 @@ def sampled_batch_rows(election: Election, jurisdiction: Jurisdiction = None):
         row += [construct_batch_last_edited_by_string(batch)]
         rows.append(row)
 
+    totals_row = ["Totals", "", sum(batch.num_ballots for batch in batches)]
+    totals_row += ["" for _ in contests]  # Ticket number cols - not relevant to totals
+    totals_row += [""]  # Audited flag - not relevant to totals
+    for contest in contests:
+        total_reported_results_by_name = {
+            choice.name: total_reported_results[contest.id][choice.id]
+            for choice in contest.choices
+        }
+        total_audit_results_by_name = {
+            choice.name: total_audit_results[contest.id][choice.id]
+            for choice in contest.choices
+        }
+        totals_row += [
+            pretty_choice_votes(total_audit_results_by_name),
+            pretty_choice_votes(total_reported_results_by_name),
+            "",  # change in results not calculated for totals
+            "",  # change in margin not calculated for totals
+        ]
+    totals_row += ""  # last edited col
+    rows.append(totals_row)
     return rows
 
 
@@ -908,9 +1001,11 @@ def audit_admin_audit_report(election: Election):
         audit_settings_rows(election),
         audit_board_rows(election),
         round_rows(election),
-        sampled_batch_rows(election)
-        if election.audit_type == AuditType.BATCH_COMPARISON
-        else sampled_ballot_rows(election),
+        (
+            sampled_batch_rows(election)
+            if election.audit_type == AuditType.BATCH_COMPARISON
+            else sampled_ballot_rows(election)
+        ),
     ]
     row_sets = [row_set for row_set in row_sets if row_set]
 
@@ -924,7 +1019,8 @@ def audit_admin_audit_report(election: Election):
 
     csv_io.seek(0)
     return csv_response(
-        csv_io, filename=f"audit-report-{election_timestamp_name(election)}.csv",
+        csv_io,
+        filename=f"audit-report-{election_timestamp_name(election)}.csv",
     )
 
 
@@ -940,9 +1036,11 @@ def jursdiction_admin_audit_report(election: Election, jurisdiction: Jurisdictio
     report = csv.writer(csv_io)
 
     report.writerows(
-        sampled_batch_rows(election, jurisdiction)
-        if election.audit_type == AuditType.BATCH_COMPARISON
-        else sampled_ballot_rows(election, jurisdiction),
+        (
+            sampled_batch_rows(election, jurisdiction)
+            if election.audit_type == AuditType.BATCH_COMPARISON
+            else sampled_ballot_rows(election, jurisdiction)
+        ),
     )
 
     csv_io.seek(0)
@@ -973,5 +1071,6 @@ def audit_admin_discrepancy_report(election: Election):
 
     csv_io.seek(0)
     return csv_response(
-        csv_io, filename=f"discrepancy-report-{election_timestamp_name(election)}.csv",
+        csv_io,
+        filename=f"discrepancy-report-{election_timestamp_name(election)}.csv",
     )

@@ -121,6 +121,21 @@ Arlo's database schema is encoded by a series of migrations. When pulling in new
 
 To run a local dev server: `./run-dev.sh`. This will also run the Arlo background worker and a local nOAuth server.
 
+### Docker Development Environment
+
+If you would like to work on Arlo from a dockerized environment, you can run
+`docker compose --profile dev-env up --build` to spin up a development
+environment instance (you can add the `-d` flag if you don't want it to take
+over your terminal). This instance mounts the arlo repo directory as a volume
+in docker, so changes made in the directory on the host system are
+automatically applied to the running container. When the dev-env container is
+built, all of the steps in the `make dev-environment` command are executed, so
+the environment should be ready to go after building. Upon coming up, the
+`run-dev.sh` script is automatically executed, so navigating to
+`localhost:3000` in your browser should show you the Arlo login screen. From
+there you can follow the steps below to create organizations and
+administrators.
+
 ### Creating organizations and audit administrators
 
 Organizations are, for example, the State of Massachusetts. Audit administrators are individual users that administer audits for an organization.

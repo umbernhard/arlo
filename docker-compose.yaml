@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:13
+    restart: always
+    user: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    environment:
+      - POSTGRES_USER=arlo
+      - POSTGRES_PASSWORD=arlo
+      - POSTGRES_DB=arlo
+      - PGUSER=arlo
+    profiles: [dev-env]
+
+
+    # TODO: figure out how to handle the test db
+    #  test-db:
+    #    image: postgres:13
+    #    restart: always
+    #    user: postgres
+    #    healthcheck:
+    #      test: ["CMD-SHELL", "pg_isready"]
+    #      interval: 1s
+    #      timeout: 5s
+    #      retries: 10
+    #    environment:
+    #      - POSTGRES_USER=arlo
+    #      - POSTGRES_PASSWORD=arlo
+    #      - POSTGRES_DB=arlotest
+    #      - PGUSER=arlo
+    #    profiles: [dev-env]
+
+  dev:
+    build:
+      dockerfile: Dockerfile.dev
+    tty: true
+    ports:
+      - 3000:3000
+      - 3001:3001
+      - 8080:8080
+    depends_on:
+      db: 
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://arlo:arlo@db:5432/arlo
+    profiles: [dev-env]
+    volumes:
+      - ./:/home/arlo/arlo
+ 
+      #prod:
+      #  build:     
+      #    dockerfile: Dockerfile.prod
+      #  # TODO: Figure out putting the worker in its own container
+      #  ports:
+      #    - 3000:3000
+      #  depends_on:
+      #    db: 
+      #      condition: service_healthy
+      #  environment:
+      #    - FLASK_APP=server/__init__.py
+      #    - FLASK_DEBUG=1
+      #    - FLASK_ENV=development
+      #    - DATABASE_URL=postgresql://arlo:arlo@db:5432/arlo
+
+
+    # TODO: prod profiles 
+
+volumes:
+  postgres_data:

@@ -265,7 +265,7 @@ def parse_login_code_from_smtp(mock_smtp):
     return parse_login_code(message.get_body(("plain")).get_content())
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_login(mock_smtp, client: FlaskClient, ja_email: str):
     rv = post_json(
         client,
@@ -318,7 +318,7 @@ def test_jurisdiction_admin_login(mock_smtp, client: FlaskClient, ja_email: str)
     assert parse_login_code_from_smtp(mock_smtp) != code
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_two_users(
     mock_smtp, client: FlaskClient, election_id: str, ja_email: str
 ):
@@ -361,7 +361,7 @@ def test_jurisdiction_admin_bad_email(client: FlaskClient):
     }
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_reuse_code(mock_smtp, client: FlaskClient, ja_email: str):
     config.LOGIN_CODE_LIFETIME = timedelta(seconds=1)
 
@@ -380,7 +380,7 @@ def test_jurisdiction_admin_reuse_code(mock_smtp, client: FlaskClient, ja_email:
     assert parse_login_code_from_smtp(mock_smtp) != code
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_smtp_error(mock_smtp, client: FlaskClient, ja_email: str):
     app.config["PROPAGATE_EXCEPTIONS"] = False
 
@@ -401,7 +401,7 @@ def test_jurisdiction_admin_smtp_error(mock_smtp, client: FlaskClient, ja_email:
     }
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_bad_code(mock_smtp, client: FlaskClient, ja_email: str):
     clear_logged_in_user(client)
 
@@ -461,7 +461,7 @@ def test_jurisdiction_admin_bad_code(mock_smtp, client: FlaskClient, ja_email: s
         assert session["_user"] is None
 
 
-@patch("smtplib.SMTP", autospec=True)
+@patch("smtplib.SMTP_SSL", autospec=True)
 def test_jurisdiction_admin_too_many_attempts(
     mock_smtp, client: FlaskClient, ja_email: str
 ):

@@ -3,7 +3,7 @@
 prepare:
 	sudo apt update
 	# Install python with virtual env and dev extensions, graphicsmagick, and gcc
-	sudo apt install -y python3.9 python3.9-venv libpython3.9-dev python-dev libpq-dev graphicsmagick gcc postgresql
+	sudo apt install -y python3.9 python3.9-venv libpython3.9-dev python3.9-dev libpq-dev graphicsmagick gcc postgresql
 	# Install node: https://github.com/nodesource/distributions/blob/master/README.md#deb		
 	curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 	sudo apt-get install -y nodejs
@@ -60,6 +60,9 @@ test-extra: # This runs the _extra files_ repo tests as well (must download firs
 
 test-extra-coverage:
 	poetry run pytest -n auto --cov=.
+
+test-db:
+	FLASK_ENV=test make db-clean
 
 ## Database
 

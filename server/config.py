@@ -175,6 +175,7 @@ scrubbed_database_url = (
 logger.info(f"DATABASE_URL={scrubbed_database_url}")
 logger.info(f"{HTTP_ORIGIN=}")
 logger.info(f"{FLASK_ENV=}")
+logger.info(f"{AWS_DEFAULT_REGION}")
 
 # Filter out any logging messages from athena/audit.py, in preference to our tighter logging
 logging.getLogger().addFilter(
